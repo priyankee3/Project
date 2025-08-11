@@ -19,7 +19,8 @@ int main()
 
 	// Assign IP and PORT
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_addr.s_addr = inet_addr("192.168.1.120");
+	//servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(5000);
 
 	// Bind Socket
