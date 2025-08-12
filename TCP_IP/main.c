@@ -6,7 +6,7 @@ int main()
 	// Variables used
 	s32 sockfd,connfd,len;	// scokfd is  for file descriptor for Socket
 	struct sockaddr_in servaddr, cliaddr;	// Structure for adding information about ip address, port no, protocol type
-	s8 buff[128];
+	s8 buff[256];
 	s8 *e = NULL;
 
 	// Creating socket for communication
@@ -21,7 +21,7 @@ int main()
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = inet_addr("192.168.1.120");
 	//servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(5000);
+	servaddr.sin_port = htons(10051);
 
 	// Bind Socket
 	if(bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0)
@@ -39,7 +39,7 @@ int main()
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Server Listening on port 5000...\n");
+	printf("Server Listening on port 10051...\n");
 
 	// Accept one client 
 	len = sizeof(cliaddr);
