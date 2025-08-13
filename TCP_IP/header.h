@@ -6,6 +6,8 @@
 #include<arpa/inet.h>	// For converting IPs, Port no to network order
 #include<string.h>
 #include<cjson/cJSON.h>	// For Transmitting and receving data in JSON format
+#include<pthread.h>	// for thread
+//#include<netinet/in.h>
 
 // Typedef
 typedef unsigned char u8;
