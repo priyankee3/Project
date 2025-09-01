@@ -8,6 +8,8 @@ int main()
 	// Required before calling other mosquitto function
 	mosquitto_lib_init();
 
+	while(1)
+	{
 	/* Create a new client instance
 	   id = NULL -> ask the broker to generate a client id for us
 	   clean session = true -> the broker should remove old sessions when we connect
@@ -28,7 +30,7 @@ int main()
 	   This call make the socket connection only, it does not complete
 	   the MQTT CONNECT/CONNACK flow, you should use mosquitto_loop_start()
 	   or mosquitto_loop_forever() for processing net traffic */
-	rc = mosquitto_connect(mosq, "192.168.1.158", 1883, 60);
+	rc = mosquitto_connect(mosq, "192.168.1.159", 1883, 60);
 	if(rc != MOSQ_ERR_SUCCESS)
 	{
 		mosquitto_destroy(mosq);
@@ -60,10 +62,12 @@ int main()
 		fprintf(stderr,"Error: %s\n", mosquitto_strerror(rc));
 		return 1;
 	}
+	sleep(1);
+	}
 
 	mosquitto_disconnect(mosq);
 	mosquitto_destroy(mosq);
-	mosquitto_lib_cleanup(); 
+	mosquitto_lib_cleanup();
 }
 
 // Callback called when the client receive a CONNACK messafe from the broker
