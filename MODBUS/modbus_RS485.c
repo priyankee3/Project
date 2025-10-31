@@ -13,8 +13,8 @@ void main()
 	msg[3] = sa & 0x00FF;
 	msg[4] = ( q >> 8 ) & 0x00FF;
 	msg[5] = q & 0x00FF;
-	msg[6] = 0xC9;
-	msg[7] = 0xC5;
+	msg[6] = 0xC5;
+	msg[7] = 0xC9;
 
 	// Open Serial Port
 	fd = open("/dev/ttyUSB0", O_RDWR);
