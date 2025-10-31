@@ -39,7 +39,7 @@ void main()
 	rs485.c_lflag = 0;	// nosignaling chars, no echo
 	rs485.c_oflag = 0;	// no remapping, no delays
 	rs485.c_cc[VMIN] = 0;	// non-blocking read
-	rs485.c_cc[VTIME] = 5;	// 0.5 second read timeout 
+	rs485.c_cc[VTIME] = 20;	// 0.5 second read timeout 
 
 	rs485.c_iflag &= ~(IXON | IXOFF | IXANY);	// no XON/XOFF
 	rs485.c_cflag |= (CLOCAL | CREAD);	//ignore modem controls
