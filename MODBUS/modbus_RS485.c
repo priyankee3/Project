@@ -1,107 +1,100 @@
-#include "header.h"         // Your header file (add std headers if needed)
-#include <termios.h>        // For serial port configuration
-#include <fcntl.h>          // For open(), O_RDWR flags
-#include <unistd.h>         // For read(), write(), close()
-#include <stdio.h>          // For printf(), perror()
-#include <string.h>         // For memset()
-#include <sys/ioctl.h>      // For RTS control (TIOCMGET / TIOCMSET)
+#include "header.h"
 
-// ---------- Main Program ----------
-int main() {
+// ---------- CRC Calculation Function ----------
+uint16_t modbus_crc(uint8_t *buf, int len)
+{
+    uint16_t crc = 0xFFFF;
+    for (int pos = 0; pos < len; pos++) {
+        crc ^= (uint16_t)buf[pos];
+        for (int i = 0; i < 8; i++) {
+            if (crc & 1)
+                crc = (crc >> 1) ^ 0xA001;
+            else
+                crc >>= 1;
+        }
+    }
+    return crc;
+}
+
+int main()
+{
     int fd, n;
-    short int sa = 172, q = 2;      // Start address = 172, number of registers = 2
-    struct termios rs485;           // Serial port structure
-    unsigned char buf[256], msg[8]; // Buffers for TX and RX
+    struct termios rs485;
+    uint8_t msg[8];
+    uint8_t buf[256];
+    uint16_t crc;
+    uint16_t start_addr = 172, qty = 2;
 
-    // -------- Build Modbus RTU Frame --------
-    // Function: Read Holding Registers (0x03)
-    msg[0] = 0x01;                       // Slave address = 1
-    msg[1] = 0x03;                       // Function code = 3 (Read Holding Registers)
-    msg[2] = (sa >> 8) & 0xFF;           // Start address high byte
-    msg[3] = sa & 0xFF;                  // Start address low byte
-    msg[4] = (q >> 8) & 0xFF;            // Quantity high byte
-    msg[5] = q & 0xFF;                   // Quantity low byte
-    msg[6] = 0xC9;                       // CRC low byte (for this frame)
-    msg[7] = 0xC5;                       // CRC high byte
+    // ----------- Build Modbus RTU Request -----------
+    msg[0] = 0x01;                    // Slave ID
+    msg[1] = 0x03;                    // Function Code (Read Holding Registers)
+    msg[2] = (start_addr >> 8) & 0xFF;
+    msg[3] = start_addr & 0xFF;
+    msg[4] = (qty >> 8) & 0xFF;
+    msg[5] = qty & 0xFF;
 
-    // -------- Open Serial Port --------
-    fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
+    // Compute CRC dynamically
+    crc = modbus_crc(msg, 6);
+    msg[6] = crc & 0xFF;              // CRC Low byte
+    msg[7] = (crc >> 8) & 0xFF;       // CRC High byte
+
+    // ----------- Open Serial Port -----------
+    fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
-        perror("Error opening port");
+        perror("Port open failed");
         return -1;
     }
 
-    // Clear non-blocking flag for read()
-    fcntl(fd, F_SETFL, 0);
-
-    // -------- Get Current Port Settings --------
+    // ----------- Configure UART 9600 8N1 -----------
     if (tcgetattr(fd, &rs485) != 0) {
-        perror("tcgetattr");
+        perror("tcgetattr failed");
         close(fd);
         return -1;
     }
 
-    // -------- Configure Serial Port --------
-    cfsetispeed(&rs485, B9600);          // Set input baud rate
-    cfsetospeed(&rs485, B9600);          // Set output baud rate
-    rs485.c_cflag = (rs485.c_cflag & ~CSIZE) | CS8;   // 8-bit data
-    rs485.c_iflag &= ~IGNBRK;            // Disable break processing
-    rs485.c_lflag = 0;                   // No signaling chars, no echo
-    rs485.c_oflag = 0;                   // No remapping, no delays
-    rs485.c_cc[VMIN] = 0;                // Non-blocking read
-    rs485.c_cc[VTIME] = 20;              // Timeout = 2.0 seconds (20 * 0.1s)
-    rs485.c_iflag &= ~(IXON | IXOFF | IXANY);  // Disable XON/XOFF
-    rs485.c_cflag |= (CLOCAL | CREAD);         // Enable receiver, ignore modem ctrl
-    rs485.c_cflag &= ~(PARENB | PARODD);       // No parity
-    rs485.c_cflag &= ~CSTOPB;                  // 1 stop bit
-    rs485.c_cflag &= ~CRTSCTS;                 // No hardware flow control
+    cfsetispeed(&rs485, B9600);
+    cfsetospeed(&rs485, B9600);
 
-    // -------- Apply Serial Settings --------
-    if (tcsetattr(fd, TCSANOW, &rs485) != 0) {
-        perror("tcsetattr");
-        close(fd);
-        return -1;
-    }
+    rs485.c_cflag = (rs485.c_cflag & ~CSIZE) | CS8; // 8 data bits
+    rs485.c_iflag &= ~IGNBRK;
+    rs485.c_lflag = 0;
+    rs485.c_oflag = 0;
+    rs485.c_cc[VMIN] = 0;
+    rs485.c_cc[VTIME] = 20;  // 2 seconds timeout (0.1s * 20)
 
-    // -------- Optional: Control RTS for Half-Duplex --------
-    int flags;
-    ioctl(fd, TIOCMGET, &flags);    // Get current modem status
-    flags |= TIOCM_RTS;             // Enable RTS = transmit mode
-    ioctl(fd, TIOCMSET, &flags);    // Apply RTS
+    rs485.c_iflag &= ~(IXON | IXOFF | IXANY);
+    rs485.c_cflag |= (CLOCAL | CREAD);
+    rs485.c_cflag &= ~(PARENB | PARODD); // No parity
+    rs485.c_cflag &= ~CSTOPB;            // 1 stop bit
+    rs485.c_cflag &= ~CRTSCTS;           // Disable HW flow control
 
-    // -------- Send Modbus Request Frame --------
-    int rc = write(fd, msg, sizeof(msg));   // Send full 8-byte frame
+    tcsetattr(fd, TCSANOW, &rs485);
+
+    // ----------- Send Modbus Request -----------
+    int rc = write(fd, msg, 8);
     if (rc < 0) {
-        perror("write");
+        perror("write failed");
         close(fd);
         return -1;
     }
 
-    tcdrain(fd);  // Wait until all data is transmitted
+    tcdrain(fd); // Wait for transmission complete
 
-    // -------- Switch to Receive Mode --------
-    flags &= ~TIOCM_RTS;            // Disable RTS = receive mode
-    ioctl(fd, TIOCMSET, &flags);    // Apply
-
-    // -------- Wait for Slave Response --------
-    usleep(500000); // 500ms delay to give slave time to respond
-
-    // -------- Read Response --------
+    // ----------- Read Response -----------
     memset(buf, 0, sizeof(buf));
-    n = read(fd, buf, sizeof(buf)); // Read response bytes
+    n = read(fd, buf, sizeof(buf));
 
     if (n > 0) {
-        printf("Received (%d bytes): ", n);
+        printf("Received %d bytes:\n", n);
         for (int i = 0; i < n; i++)
-            printf("%02X ", buf[i]);   // Print each byte in HEX
+            printf("%02X ", buf[i]);
         printf("\n");
-    } else if (n < 0) {
-        perror("read");
+    } else if (n == 0) {
+        printf("No data received (timeout)\n");
     } else {
-        printf("No data received\n");
+        perror("read failed");
     }
 
-    // -------- Close Port --------
     close(fd);
     return 0;
 }
