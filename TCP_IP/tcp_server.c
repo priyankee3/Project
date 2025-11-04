@@ -105,7 +105,7 @@ int main()
 			free(connfd);
 		}
 		
-		pthread_detach(tid);	//no need to join
+		//pthread_detach(tid);	//no need to join
 	}
 	
 	close(sockfd);
