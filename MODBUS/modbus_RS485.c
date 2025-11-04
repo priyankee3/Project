@@ -15,7 +15,9 @@ int main()
 	modbusInit(fd);
 	tcflush( fd, TCIFLUSH );
 	tcsetattr(fd, TCSANOW, &rs485);
-
+	
+	while(1)
+	{
 	// ---------- Frequency ----------
 	control_rts(fd, 1);	// Enable for transmission
 
@@ -45,7 +47,7 @@ int main()
 		n = read(fd, buf, sizeof(buf));
 
 		if ( n > 0 ) {
-			printf("Received %X\n", buf);
+			printf("Received");
 			hex(n);
 		}
 		else if( n < 0 )
@@ -83,7 +85,7 @@ int main()
 		n = read(fd, buf, sizeof(buf));
 
 		if ( n > 0 ) {
-			printf("Received %X\n", buf);
+			printf("Received");
 			hex(n);
 		}
 		else if( n < 0 )
@@ -120,7 +122,7 @@ int main()
 		n = read(fd, buf, sizeof(buf));
 
 		if ( n > 0 ) {
-			printf("Received %X\n", buf);
+			printf("Received");
 			hex(n);
 		}
 		else if( n < 0 )
@@ -128,6 +130,7 @@ int main()
 		else
 			printf("Read Timeout\n");
 
+	}
 	}
 	
 	close(fd);
