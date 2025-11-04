@@ -3,7 +3,6 @@
 2] Compile with:
    gcc server.c -o server -lcjson -lpthread
 ******************************************************************/
-#include "header.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
