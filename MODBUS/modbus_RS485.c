@@ -2,7 +2,6 @@
 
 int main()
 {
-	int fd;
 
 	// ----------- Open Serial Port -----------
 	fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_SYNC);
@@ -15,124 +14,105 @@ int main()
 	modbusInit(fd);
 	tcflush( fd, TCIFLUSH );
 	tcsetattr(fd, TCSANOW, &rs485);
-	
+
 	while(1)
 	{
-	// ---------- Frequency ----------
-	control_rts(fd, 1);	// Enable for transmission
+		// ---------- Frequency ----------
+		control_rts(fd, 1);	// Enable for transmission
 
-	modbus_req(1, 172, 2);
-	n = write(fd, msg, sizeof(msg));
-	if( n < 0 ) {
-		perror("Write:");
-		close(fd);
-		return 0;
-	}
-
-	t = time(NULL);	// Making it zero
-	tcdrain(fd);	// Wait until all data is Transmitted
-	control_rts(fd, 0);	// Enable receiving
-
-	FD_ZERO(&read_fds);	// clear the read fds
-	FD_SET( fd, &read_fds);	// adding fd to read_fds to monitor incoming message
-	timeout.tv_sec = 2;	// 2 seconds timeout
-	timeout.tv_usec = 0;	
-
-	n = 0;
-	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
-	usleep(50000);
-	if( n > 0 ) {
-		// Read Response
-		memset(buf, 0, sizeof(buf));
-		n = read(fd, buf, sizeof(buf));
-
-		if ( n > 0 ) {
-			printf("Received");
-			hex(n);
+		modbus_req(1, 172, 2);
+		n = write(fd, msg, sizeof(msg));
+		if( n < 0 ) {
+			perror("Write:");
+			close(fd);
+			return 0;
 		}
-		else if( n < 0 )
-			perror("Read");
-		else
-			printf("Read Timeout\n");
 
-	}
 
-	// ---------- Voltage ----------
-	control_rts(fd, 1);	// Enable Transmission
+		t = time(NULL);	// Making it zero
 
-	modbus_req( 1, 100, 6);
-	n = write(fd, msg, sizeof(msg));
-	if( n < 0 ) {
-		perror("Write:");
-		close(fd);
-		return 0;
-	}
+		// Function to Set fd to read from device
+		read_RS485();
 
-	tcdrain(fd);	// Wait until all data is Transmitted
-	control_rts(fd, 0);	// Enable receiving
+		usleep(50000);	// Delay of more than char 3.5 for receving data
+		if( n > 0 ) {
+			// Read Response
+			memset(buf, 0, sizeof(buf));
+			n = read(fd, buf, sizeof(buf));
 
-	FD_ZERO(&read_fds);	// clear the read fds
-	FD_SET( fd, &read_fds);	// adding fd to read_fds to monitor incoming message
-	timeout.tv_sec = 2;	// 2 seconds timeout
-	timeout.tv_usec = 0;	
+			if ( n > 0 ) {
+				printf("Received");
+				hex(n);
+			}
+			else if( n < 0 )
+				perror("Read");
+			else
+				printf("Read Timeout\n");
 
-	n = 0;
-	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
-	usleep(50000);
-	if( n > 0 ) {
-		// Read Response
-		memset(buf, 0, sizeof(buf));
-		n = read(fd, buf, sizeof(buf));
-
-		if ( n > 0 ) {
-			printf("Received");
-			hex(n);
 		}
-		else if( n < 0 )
-			perror("Read");
-		else
-			printf("Read Timeout\n");
 
-	}
-	// ---------- Power Factor ----------
-	control_rts(fd, 1);	// Enable Transmission
+		// ---------- Voltage ----------
+		control_rts(fd, 1);	// Enable Transmission
 
-	modbus_req( 1, 134, 6);
-	n = write(fd, msg, sizeof(msg));
-	if( n < 0 ) {
-		perror("Write:");
-		close(fd);
-		return 0;
-	}
-
-	tcdrain(fd);	// Wait until all data is Transmitted
-	control_rts(fd, 0);	// Enable receiving
-
-	FD_ZERO(&read_fds);	// clear the read fds
-	FD_SET( fd, &read_fds);	// adding fd to read_fds to monitor incoming message
-	timeout.tv_sec = 2;	// 2 seconds timeout
-	timeout.tv_usec = 0;	
-
-	n = 0;
-	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
-	usleep(50000);
-	if( n > 0 ) {
-		// Read Response
-		memset(buf, 0, sizeof(buf));
-		n = read(fd, buf, sizeof(buf));
-
-		if ( n > 0 ) {
-			printf("Received");
-			hex(n);
+		modbus_req( 1, 100, 6);
+		n = write(fd, msg, sizeof(msg));
+		if( n < 0 ) {
+			perror("Write:");
+			close(fd);
+			return 0;
 		}
-		else if( n < 0 )
-			perror("Read");
-		else
-			printf("Read Timeout\n");
+		
+		// Function to Set fd to read from device
+		read_RS485();
 
-	}
-	}
+		usleep(50000);	// Delay of more than char 3.5 for receving data
+		if( n > 0 ) {
+			// Read Response
+			memset(buf, 0, sizeof(buf));
+			n = read(fd, buf, sizeof(buf));
+
+			if ( n > 0 ) {
+				printf("Received");
+				hex(n);
+			}
+			else if( n < 0 )
+				perror("Read");
+			else
+				printf("Read Timeout\n");
+
+		}
+		// ---------- Power Factor ----------
+		control_rts(fd, 1);	// Enable Transmission
+
+		modbus_req( 1, 134, 6);
+		n = write(fd, msg, sizeof(msg));
+		if( n < 0 ) {
+			perror("Write:");
+			close(fd);
+			return 0;
+		}
+		
+		// Function to Set fd to read from device
+		read_RS485();
 	
+		usleep(50000);	// Delay of more than char 3.5 for receving data
+		if( n > 0 ) {
+			// Read Response
+			memset(buf, 0, sizeof(buf));
+			n = read(fd, buf, sizeof(buf));
+
+			if ( n > 0 ) {
+				printf("Received");
+				hex(n);
+			}
+			else if( n < 0 )
+				perror("Read");
+			else
+				printf("Read Timeout\n");
+
+		}
+	}
+
 	close(fd);
 	return 0;
 }
@@ -217,4 +197,19 @@ void control_rts(int fd, int enable)
 		flags &= ~TIOCM_RTS;	// Set RTS low (Enable Rx)
 
 	ioctl(fd, TIOCMSET, &flags);
+}
+
+// ---------- Function to Set FD to Read from Device ----------
+void read_RS485(void) 
+{
+	tcdrain(fd);	// Wait until all data is Transmitted
+	control_rts(fd, 0);	// Enable receiving
+
+	FD_ZERO(&read_fds);	// clear the read fds
+	FD_SET( fd, &read_fds);	// adding fd to read_fds to monitor incoming message
+	timeout.tv_sec = 2;	// 2 seconds timeout
+	timeout.tv_usec = 0;	
+
+	n = 0;
+	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
 }

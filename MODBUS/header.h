@@ -28,9 +28,10 @@ void control_rts(int, int);
 void modbusInit(int);
 void modbus_req(s32 si, u16 sa, u16 qty);
 void hex(int);
+void read_RS485(void);
 
 // Varibles 
-int n;
+int n,fd;
 struct termios rs485;
 uint8_t msg[8];
 uint8_t buf[256];
