@@ -39,6 +39,7 @@ void* handle_client(void *arg)
 		bzero(buff, sizeof(buff));
 		strcpy(buff,"DONE\n");
 		write(connfd, buff, sizeof(buff));
+		cJSON_Delete(json);
 	}
 	close(connfd);
 }
@@ -105,7 +106,7 @@ int main()
 			free(connfd);
 		}
 		
-		//pthread_detach(tid);	//no need to join
+		pthread_detach(tid);	//no need to join
 	}
 	
 	close(sockfd);
