@@ -3,6 +3,7 @@
 2] Compile with:
    gcc server.c -o server -lcjson -lpthread
 ******************************************************************/
+#include "header.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -148,4 +149,43 @@ int main()
 	{
 		perror("Listen Failed");
 		close(sockfd);
+		exit(EXIT_FAILURE);
+	}
+
+	printf("Server Listening on port 5005...\n");
+
+	while (1)
+	{
+		len = sizeof(cliaddr);
+		connfd = malloc(sizeof(int));
+		if (!connfd)
+		{
+			perror("Malloc failed");
+			continue;
+		}
+
+		*connfd = accept(sockfd, (struct sockaddr *)&cliaddr, &len);
+		if (*connfd < 0)
+		{
+			perror("Accept Failed");
+			free(connfd);
+			continue;
+		}
+
+		printf("Client Connected: %s:%d\n", inet_ntoa(cliaddr.sin_addr), ntohs(cliaddr.sin_port));
+
+		if (pthread_create(&tid, NULL, handle_client, connfd) != 0)
+		{
+			perror("Thread Creation Failed");
+			close(*connfd);
+			free(connfd);
+			continue;
+		}
+
+		pthread_detach(tid);
+	}
+
+	close(sockfd);
+	return 0;
+}
 
