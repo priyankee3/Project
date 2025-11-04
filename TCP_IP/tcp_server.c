@@ -25,7 +25,7 @@ void* handle_client(void *arg)
 		if( json == NULL )
 		{
 			printf("JSON Prasing Status: %s", cJSON_GetErrorPtr());
-			cJSON_Delete(json);
+			break;
 		}
 		else
 		{
