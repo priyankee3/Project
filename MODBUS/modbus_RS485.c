@@ -13,10 +13,12 @@ int main()
 
 	// ---------- Initialize Modbus ----------
 	modbusInit(fd);
+	tcflush( fd, TCIFLUSH );
+	tcsetattr(fd, TCSANOW, &rs485);
 
 	// ---------- Frequency ----------
 	control_rts(fd, 1);	// Enable for transmission
-	
+
 	modbus_req(1, 172, 2);
 	n = write(fd, msg, sizeof(msg));
 	if( n < 0 ) {
@@ -24,22 +26,110 @@ int main()
 		close(fd);
 		return 0;
 	}
-	
+
+	t = time(NULL);	// Making it zero
 	tcdrain(fd);	// Wait until all data is Transmitted
-	
-	// Read Response
-	memset(buf, 0, sizeof(buf));
-	n = read(fd, buf, sizeof(buf));
+	control_rts(fd, 0);	// Enable receiving
 
-	if ( n > 0 ) {
-		printf("Received %X\n", buf);
-		hex(n);
+	FD_ZERO(&read_fds);	// clear the read fds
+	FD_SET( fd, &read_fds);	// adding fd to read_fds to monitor incoming message
+	timeout.tv_sec = 2;	// 2 seconds timeout
+	timeout.tv_usec = 0;	
+
+	n = 0;
+	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
+	usleep(50000);
+	if( n > 0 ) {
+		// Read Response
+		memset(buf, 0, sizeof(buf));
+		n = read(fd, buf, sizeof(buf));
+
+		if ( n > 0 ) {
+			printf("Received %X\n", buf);
+			hex(n);
+		}
+		else if( n < 0 )
+			perror("Read");
+		else
+			printf("Read Timeout\n");
+
 	}
-	else if( n < 0 )
-		perror("Read");
-	else
-		printf("Read Timeout\n");
 
+	// ---------- Voltage ----------
+	control_rts(fd, 1);	// Enable Transmission
+
+	modbus_req( 1, 100, 6);
+	n = write(fd, msg, sizeof(msg));
+	if( n < 0 ) {
+		perror("Write:");
+		close(fd);
+		return 0;
+	}
+
+	tcdrain(fd);	// Wait until all data is Transmitted
+	control_rts(fd, 0);	// Enable receiving
+
+	FD_ZERO(&read_fds);	// clear the read fds
+	FD_SET( fd, &read_fds);	// adding fd to read_fds to monitor incoming message
+	timeout.tv_sec = 2;	// 2 seconds timeout
+	timeout.tv_usec = 0;	
+
+	n = 0;
+	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
+	usleep(50000);
+	if( n > 0 ) {
+		// Read Response
+		memset(buf, 0, sizeof(buf));
+		n = read(fd, buf, sizeof(buf));
+
+		if ( n > 0 ) {
+			printf("Received %X\n", buf);
+			hex(n);
+		}
+		else if( n < 0 )
+			perror("Read");
+		else
+			printf("Read Timeout\n");
+
+	}
+	// ---------- Power Factor ----------
+	control_rts(fd, 1);	// Enable Transmission
+
+	modbus_req( 1, 134, 6);
+	n = write(fd, msg, sizeof(msg));
+	if( n < 0 ) {
+		perror("Write:");
+		close(fd);
+		return 0;
+	}
+
+	tcdrain(fd);	// Wait until all data is Transmitted
+	control_rts(fd, 0);	// Enable receiving
+
+	FD_ZERO(&read_fds);	// clear the read fds
+	FD_SET( fd, &read_fds);	// adding fd to read_fds to monitor incoming message
+	timeout.tv_sec = 2;	// 2 seconds timeout
+	timeout.tv_usec = 0;	
+
+	n = 0;
+	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
+	usleep(50000);
+	if( n > 0 ) {
+		// Read Response
+		memset(buf, 0, sizeof(buf));
+		n = read(fd, buf, sizeof(buf));
+
+		if ( n > 0 ) {
+			printf("Received %X\n", buf);
+			hex(n);
+		}
+		else if( n < 0 )
+			perror("Read");
+		else
+			printf("Read Timeout\n");
+
+	}
+	
 	close(fd);
 	return 0;
 }
@@ -56,18 +146,14 @@ void modbusInit(int fd)
 	cfsetispeed(&rs485, B9600);
 	cfsetospeed(&rs485, B9600);
 
-	rs485.c_cflag = (rs485.c_cflag & ~CSIZE) | CS8; // 8 data bits
-	rs485.c_iflag &= ~IGNBRK;
-	rs485.c_lflag = 0;
-	rs485.c_oflag = 0;
-	rs485.c_cc[VMIN] = 0;
-	rs485.c_cc[VTIME] = 20;  // 2 seconds timeout (0.1s * 20)
-
-	rs485.c_iflag &= ~(IXON | IXOFF | IXANY);
 	rs485.c_cflag |= (CLOCAL | CREAD);
-	rs485.c_cflag &= ~(PARENB | PARODD); // No parity
-	rs485.c_cflag &= ~CSTOPB;            // 1 stop bit
-	rs485.c_cflag &= ~CRTSCTS;           // Disable HW flow control
+	rs485.c_cflag &= ~CSIZE;
+	rs485.c_cflag |= CS8;
+	rs485.c_cflag &= ~PARENB;
+	rs485.c_cflag &= ~CSTOPB;
+	rs485.c_iflag = IGNPAR;
+	rs485.c_oflag = 0;
+	rs485.c_lflag = 0;
 
 	tcsetattr(fd, TCSANOW, &rs485);
 }
@@ -76,17 +162,18 @@ void modbusInit(int fd)
 void modbus_req(s32 si, u16 sa, u16 qty)
 {
 	u16 crc;
+	sa-=1;
 	// ----------- Build Modbus RTU Request -----------
-	msg[0] = (char)si;                    // Slave ID
+	msg[0] = si;                    // Slave ID
 	msg[1] = 0x03;                    // Function Code (Read Holding Registers)
-	msg[2] = (sa >> 8) & 0xFF;
-	msg[3] = sa & 0xFF;
-	msg[4] = (qty >> 8) & 0xFF;
-	msg[5] = qty & 0xFF;
+	msg[2] = (sa >> 8) & 0x00FF;
+	msg[3] = (sa & 0xFF);
+	msg[4] = (qty >> 8) & 0x00FF;
+	msg[5] = (qty & 0xFF);
 	// Compute CRC dynamically
 	crc = modbus_crc(msg, 6);
-	msg[6] = crc & 0xFF;              // CRC Low byte
-	msg[7] = (crc >> 8) & 0xFF;       // CRC High byte
+	msg[6] = (crc & 0x00FF);              // CRC Low byte
+	msg[7] = (crc >> 8) & 0x00FF;       // CRC High byte
 
 }
 

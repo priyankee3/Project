@@ -7,6 +7,7 @@
 #include<termios.h>	// For Configuring USB
 #include<string.h>
 #include<stdint.h>
+#include<time.h>
 
 // Typedef 
 typedef char s8;
@@ -35,7 +36,14 @@ uint8_t msg[8];
 uint8_t buf[256];
 
 // User-defined Variables
-struct hex_float {
+union hex_float {
 	char value[0];
 	float result;
 }uni;
+
+// Variable for timeout for receiving data
+fd_set read_fds;	// Declare a file descriptor to monitor the declared file descriptor
+struct timeval timeout;	// Structure to set timeout period
+
+// Variable to get current time 
+time_t t;
