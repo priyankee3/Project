@@ -41,8 +41,13 @@ int main()
 			n = read(fd, buf, sizeof(buf));
 
 			if ( n > 0 ) {
-				printf("Received");
+				printf("Received size %d\n", n);
 				hex(n);
+				
+				if(crc_check( buf, n))
+					printf("Okay\n");
+				else
+					printf("Not okay\n");
 			}
 			else if( n < 0 )
 				perror("Read");
@@ -72,8 +77,13 @@ int main()
 			n = read(fd, buf, sizeof(buf));
 
 			if ( n > 0 ) {
-				printf("Received");
+				printf("Received size %d\n", n);
 				hex(n);
+				
+				if(crc_check( buf, n))
+					printf("Okay\n");
+				else
+					printf("Not okay\n");
 			}
 			else if( n < 0 )
 				perror("Read");
@@ -102,8 +112,16 @@ int main()
 			n = read(fd, buf, sizeof(buf));
 
 			if ( n > 0 ) {
-				printf("Received");
+				u16 crc;
+
+				printf("Received size %d\n", n);
 				hex(n);
+				
+				if(crc_check( buf, n))
+					printf("Okay\n");
+				else
+					printf("Not okay\n");
+				
 			}
 			else if( n < 0 )
 				perror("Read");
@@ -212,4 +230,20 @@ void read_RS485(void)
 
 	n = 0;
 	n = select( fd+1, &read_fds, NULL, NULL, &timeout);
+}
+
+// ---------- Function to check crc of received frame ----------
+int crc_check(u8 *buf, s32 n)
+{
+	int crc;	// Calculated CRC
+	u16 rcrc;	// Received CRC
+
+	crc = modbus_crc( buf, n-2);
+	rcrc = buf[n-2] & 0xFF;
+	rcrc |= ((buf[n-1] & 0xFF) << 8);
+	
+	if( crc == rcrc )
+		return 1;
+	else 
+		return 0;
 }
