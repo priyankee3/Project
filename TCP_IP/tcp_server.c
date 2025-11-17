@@ -18,7 +18,7 @@ void* handle_client(void *arg)
 	while(1)
 	{
 		bzero(buff, sizeof(buff));
-		n = read(connfd, buff, sizeof(buff)-1);
+		n = read(connfd, buff, sizeof(buff));
 		
 		if( n <= 0 )
 		{
