@@ -47,7 +47,7 @@ void* handle_client(void *arg)
 
 		bzero(buff, sizeof(buff));
 		strcpy(buff,"DONE\n");
-		write(connfd, buff, sizeof(buff));
+		write(connfd, buff, strlen(buff));
 		cJSON_Delete(json);
 	}
 	close(connfd);
@@ -98,7 +98,7 @@ int main()
 		len = sizeof(cliaddr);
 		connfd = malloc(sizeof(s32));
 		*connfd = accept(sockfd, (struct sockaddr*)&cliaddr, &len);
-		if(connfd < 0)
+		if(*connfd < 0)
 		{
 			perror("Accept failed");
 			free(connfd);
