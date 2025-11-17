@@ -13,7 +13,6 @@ void* handle_client(void *arg)
 	s8 buff[256];
 	cJSON *json = NULL;	// file descriptor for JSON
 	
-	printf("Client Connected: %s:%d\n", inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
 	// Read and Write with client
 	while(1)
 	{
@@ -105,6 +104,7 @@ int main()
 			continue;
 		}
 		
+		printf("Client Connected: %s:%d\n", inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
 		// Creating Thread for client
 		if(pthread_create(&tid, NULL, handle_client, connfd) != 0 )
 		{
