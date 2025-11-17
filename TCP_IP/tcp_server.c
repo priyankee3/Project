@@ -16,6 +16,7 @@ void* handle_client(void *arg)
 	// Read and Write with client
 	while(1)
 	{
+		printf("Client Connected: %s:%d\n", inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
 		bzero(buff, sizeof(buff));
 		n = read(connfd, buff, sizeof(buff)-1);
 		printf("Received String: %s\n", buff);
@@ -50,7 +51,6 @@ int main()
 
 	// Variables used
 	s32 sockfd,*connfd,len;	// scokfd is  for file descriptor for Socket
-	struct sockaddr_in servaddr, cliaddr;	// Structure for adding information about ip address, port no, protocol type
 	pthread_t tid;
 
 	// Creating socket for communication
@@ -97,7 +97,6 @@ int main()
 			free(connfd);
 			continue;
 		}
-		printf("Client Connected: %s:%d\n", inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
 		
 		// Creating Thread for client
 		if(pthread_create(&tid, NULL, handle_client, connfd) != 0 )

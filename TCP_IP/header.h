@@ -19,3 +19,5 @@ typedef int s32;
 typedef float f32;
 typedef double d64;
 
+// Variables
+struct sockaddr_in servaddr, cliaddr;	// Structure for adding information about ip address, port no, protocol type
