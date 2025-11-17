@@ -19,6 +19,13 @@ void* handle_client(void *arg)
 	{
 		bzero(buff, sizeof(buff));
 		n = read(connfd, buff, sizeof(buff)-1);
+		
+		if( n <= 0 )
+		{
+			printf("Client Disconnected !!\n");
+			break;
+		}
+
 		printf("Received String: %s\n", buff);
 		
 		// Prase the JSON data
