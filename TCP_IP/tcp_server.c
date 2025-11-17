@@ -27,7 +27,7 @@ void* handle_client(void *arg)
 		{
 			printf("JSON Prasing Status: %s", cJSON_GetErrorPtr());
 			bzero(buff, sizeof(buff));
-			break;
+			continue;
 		}
 		else
 		{
